@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MemeTracker - Memecoin Price Tracker & Prediction Markets</title>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; padding: 0; overflow-x: hidden; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+```
+<script type="text/babel">
+    const { useState } = React;
+
+    const TrendingUp = () => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+            <polyline points="17 6 23 6 23 12"></polyline>
+        </svg>
+    );
+
+    const TrendingDown = () => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline>
+            <polyline points="17 18 23 18 23 12"></polyline>
+        </svg>
+    );
+
+    const Plus = () => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+    );
+
+    const X = () => (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+    );
+
+    const Share2 = () => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="18" cy="5" r="3"></circle>
+            <circle cx="6" cy="12" r="3"></circle>
+            <circle cx="18" cy="19" r="3"></circle>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+        </svg>
+    );
+
+    const Copy = () => (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+    );
+
+    const MemecoinTracker = () => {
+        const [coins, setCoins] = useState([
+            { 
+                id: 'troll', 
+                symbol: '$TROLL', 
+                name: 'Troll',
+                price: 0.000234, 
+                change24h: 12.34, 
+                marketCap: '45.2M',
+                volume24h: '2.1M',
+                color: 'from-green-500 to-emerald-600'
+            },
+            { 
+                id: 'fartcoin', 
+                symbol: '$FARTCOIN', 
+                name: 'Fartcoin',
+                price: 0.00156, 
+                change24h: -5.67, 
+                marketCap: '78.5M',
+                volume24h: '4.3M',
+                color: 'from-purple-500 to-pink-600'
+            },
+            { 
+                id: 'pepe', 
+                symbol: '$PEPE', 
+                name: 'Pepe',
+                price: 0.00000123, 
+                change24h: 8.92, 
+                marketCap: '523.8M',
+                volume24h: '45.7M',
+                color: 'from-blue-500 to-cyan-600'
+            }
+        ]);
+
+        const [selectedCoin, setSelectedCoin] = useState(coins[0]);
+        const [timeframe, setTimeframe] = useState('1D');
+        const [showAddCoin, setShowAddCoin] = useState(false);
+        const [showBetModal, setShowBetModal] = useState(false);
+        const [showShareModal, setShowShareModal] = useState(false);
+        const [betAmount, setBetAmount] = useState('');
+        const [betSide, setBetSide] = useState('YES');
+        const [walletConnected, setWalletConnected] = useState(false);
+
+        const [newCoin, setNewCoin] = useState({
+            symbol: '',
+            name: '',
+            price: '',
+            change24h: '',
+            marketCap: '',
+            volume24h: ''
+        });
+
+        const [activeBet, setActiveBet] = useState({
+            question: 'Will this coin 10x in 30 days?',
+            yesShares: 0,
+            noShares: 0,
+            yesPrice: 0.15,
+            noPrice: 0.85
+        });
+
+        const timeframes = ['1H', '1D', '1W', '1M', '1Y', 'ALL'];
+        
+        const colorOptions = [
+            'from-red-500 to-orange-600',
+            'from-yellow-500 to-amber-600',
+            'from-green-500 to-emerald-600',
+            'from-blue-500 to-cyan-600',
+            'from-purple-500 to-pink-600',
+            'from-indigo-500 to-violet-600'
+        ];
+
+        const handleAddCoin = () => {
+            if (newCoin.symbol && newCoin.name && newCoin.price) {
+                const randomColor = colorOptions[Math.floor(Math.random() * colorOptions.length)];
+                const newCoinData = {
+                    id: newCoin.symbol.toLowerCase().replace('$', ''),
+                    symbol: newCoin.symbol.startsWith('$') ? newCoin.symbol : '$' + newCoin.symbol,
+                    name: newCoin.name,
+                    price: parseFloat(newCoin.price),
+                    change24h: parseFloat(newCoin.change24h) || 0,
+                    marketCap: newCoin.marketCap || 'N/A',
+                    volume24h: newCoin.volume24h || 'N/A',
+                    color: randomColor
+                };
+                setCoins([...coins, newCoinData]);
+                setNewCoin({ symbol: '', name: '', price: '', change24h: '', marketCap: '', volume24h: '' });
+                setShowAddCoin(false);
+            }
+        };
+
+        const placeBet = () => {
+            if (!walletConnected) {
+                alert('Please connect your wallet first!');
+                return;
+            }
+            if (betAmount && parseFloat(betAmount) > 0) {
+                const amount = parseFloat(betAmount);
+                if (betSide === 'YES') {
+                    setActiveBet({...activeBet, yesShares: activeBet.yesShares + amount});
+                } else {
+                    setActiveBet({...activeBet, noShares: activeBet.noShares + amount});
+                }
+                setBetAmount('');
+                setShowBetModal(false);
+                alert(`Bet placed: $${amount} on ${betSide}`);
+            }
+        };
+
+        const calculatePotentialReturn = () => {
+            if (!betAmount || parseFloat(betAmount) <= 0) return 0;
+            const amount = parseFloat(betAmount);
+            const price = betSide === 'YES' ? activeBet.yesPrice : activeBet.noPrice;
+            return (amount / price).toFixed(2);
+        };
+
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 text-white">
+                {/* Header */}
+                <div className="border-b border-purple-500/30 bg-black/30 backdrop-blur-sm">
+                    <div className="max-w-7xl mx-auto px-4 py-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <div className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-600 bg-clip-text text-transparent">
+                                    🚀 MEMETRACKER
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => setWalletConnected(!walletConnected)}
+                                className={`px-6 py-2 rounded-full font-semibold transition-all ${
+                                    walletConnected 
+                                        ? 'bg-green-600 hover:bg-green-700' 
+                                        : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700'
+                                }`}
+                            >
+                                {walletConnected ? '✓ Connected' : 'Connect Wallet'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Coin Selection */}
+                <div className="max-w-7xl mx-auto px-4 py-6">
+                    <div className="flex gap-3 overflow-x-auto pb-2">
+                        {coins.map(coin => (
+                            <button
+                                key={coin.id}
+                                onClick={() => setSelectedCoin(coin)}
+                                className={`flex-shrink-0 px-6 py-3 rounded-xl font-bold transition-all ${
+                                    selectedCoin.id === coin.id
+                                        ? `bg-gradient-to-r ${coin.color} shadow-lg scale-105`
+                                        : 'bg-white/10 hover:bg-white/20'
+                                }`}
+                            >
+                                {coin.symbol}
+                            </button>
+                        ))}
+                        <button
+                            onClick={() => setShowAddCoin(true)}
+                            className="flex-shrink-0 px-6 py-3 rounded-xl font-bold bg-white/10 hover:bg-white/20 transition-all flex items-center gap-2"
+                        >
+                            <Plus /> Add Coin
+                        </button>
+                    </div>
+                </div>
+
+                {/* Main Content */}
+                <div className="max-w-7xl mx-auto px-4 py-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Chart Area */}
+                        <div className="lg:col-span-2">
+                            <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
+                                {/* Price Header */}
+                                <div className="mb-6">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <h2 className="text-3xl font-bold">{selectedCoin.symbol}</h2>
+                                        <button 
+                                            onClick={() => setShowShareModal(true)}
+                                            className="p-2 hover:bg-white/10 rounded-lg transition-all"
+                                        >
+                                            <Share2 />
+                                        </button>
+                                    </div>
+                                    <div className="text-4xl font-bold mb-2">
+                                        ${selectedCoin.price.toFixed(8)}
+                                    </div>
+                                    <div className={`flex items-center gap-2 text-lg ${
+                                        selectedCoin.change24h >= 0 ? 'text-green-400' : 'text-red-400'
+                                    }`}>
+                                        {selectedCoin.change24h >= 0 ? <TrendingUp /> : <TrendingDown />}
+                                        {selectedCoin.change24h >= 0 ? '+' : ''}{selectedCoin.change24h.toFixed(2)}% today
+                                    </div>
+                                </div>
+
+                                {/* Stats */}
+                                <div className="grid grid-cols-2 gap-4 mb-6">
+                                    <div className="bg-white/5 rounded-lg p-4">
+                                        <div className="text-gray-400 text-sm mb-1">Market Cap</div>
+                                        <div className="text-xl font-bold">${selectedCoin.marketCap}</div>
+                                    </div>
+                                    <div className="bg-white/5 rounded-lg p-4">
+                                        <div className="text-gray-400 text-sm mb-1">24h Volume</div>
+                                        <div className="text-xl font-bold">${selectedCoin.volume24h}</div>
+                                    </div>
+                                </div>
+
+                                {/* Timeframe Selection */}
+                                <div className="flex gap-2 mb-6 flex-wrap">
+                                    {timeframes.map(tf => (
+                                        <button
+                                            key={tf}
+                                            onClick={() => setTimeframe(tf)}
+                                            className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                                                timeframe === tf
+                                                    ? 'bg-purple-600 text-white'
+                                                    : 'bg-white/10 hover:bg-white/20'
+                                            }`}
+                                        >
+                                            {tf}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Mock Chart */}
+                                <div className="h-64 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-xl flex items-center justify-center border border-purple-500/20">
+                                    <div className="text-center text-gray-400">
+                                        <div className="text-6xl mb-4">📈</div>
+                                        <div>Price chart for {selectedCoin.symbol}</div>
+                                        <div className="text-sm mt-2">Connect to live data feed</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Prediction Markets */}
+                        <div className="lg:col-span-1">
+                            <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
+                                <h3 className="text-xl font-bold mb-4">PREDICTION MARKETS</h3>
+                                <div className="text-sm text-gray-400 mb-6">powered by Kalshi & DFlow</div>
+
+                                <div className="bg-gradient-to-br from-purple-600/20 to-pink-600/20 rounded-xl p-4 mb-4 border border-purple-500/30">
+                                    <div className="font-bold mb-3">{activeBet.question}</div>
+                                    
+                                    <div className="grid grid-cols-2 gap-3 mb-4">
+                                        <div className="bg-green-600/20 border border-green-500/50 rounded-lg p-3">
+                                            <div className="text-green-400 font-bold text-sm">YES</div>
+                                            <div className="text-2xl font-bold">{(activeBet.yesPrice * 100).toFixed(0)}¢</div>
+                                            <div className="text-xs text-gray-400">{activeBet.yesShares} shares</div>
+                                        </div>
+                                        <div className="bg-red-600/20 border border-red-500/50 rounded-lg p-3">
+                                            <div className="text-red-400 font-bold text-sm">NO</div>
+                                            <div className="text-2xl font-bold">{(activeBet.noPrice * 100).toFixed(0)}¢</div>
+                                            <div className="text-xs text-gray-400">{activeBet.noShares} shares</div>
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        onClick={() => setShowBetModal(true)}
+                                        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 py-3 rounded-lg font-bold transition-all"
+                                    >
+                                        Place Bet
+                                    </button>
+                                </div>
+
+                                <div className="bg-white/5 rounded-xl p-4">
+                                    <div className="text-sm text-gray-400 mb-2">Your Position</div>
+                                    {activeBet.yesShares > 0 || activeBet.noShares > 0 ? (
+                                        <div>
+                                            {activeBet.yesShares > 0 && (
+                                                <div className="mb-2">
+                                                    <span className="text-green-400 font-bold">YES</span> - {activeBet.yesShares} shares
+                                                </div>
+                                            )}
+                                            {activeBet.noShares > 0 && (
+                                                <div>
+                                                    <span className="text-red-400 font-bold">NO</span> - {activeBet.noShares} shares
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="text-gray-500">No position in this market</div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Add Coin Modal */}
+                {showAddCoin && (
+                    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+                        <div className="bg-gray-900 rounded-2xl p-6 max-w-md w-full border border-purple-500/30">
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-2xl font-bold">Add New Coin</h3>
+                                <button onClick={() => setShowAddCoin(false)} className="hover:bg-white/10 p-2 rounded-lg">
+                                    <X />
+                                </button>
+                            </div>
+                            
+                            <div className="space-y-4">
+                                <input
+                                    type="text"
+                                    placeholder="Symbol (e.g., $DOGE)"
+                                    value={newCoin.symbol}
+                                    onChange={(e) => setNewCoin({...newCoin, symbol: e.target.value})}
+                                    className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500 text-white"
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="Name (e.g., Dogecoin)"
+                                    value={newCoin.name}
+                                    onChange={(e) => setNewCoin({...newCoin, name: e.target.value})}
+                                    className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500 text-white"
+                                />
+                                <input
+                                    type="number"
+                                    placeholder="Price (e.g., 0.000123)"
+                                    value={newCoin.price}
+                                    onChange={(e) => setNewCoin({...newCoin, price: e.target.value})}
+                                    className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500 text-white"
+                                />
+                                <input
+                                    type="number"
+                                    placeholder="24h Change % (e.g., 5.67)"
+                                    value={newCoin.change24h}
+                                    onChange={(e) => setNewCoin({...newCoin, change24h: e.target.value})}
+                                    className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500 text-white"
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="Market Cap (e.g., 123.4M)"
+                                    value={newCoin.marketCap}
+                                    onChange={(e) => setNewCoin({...newCoin, marketCap: e.target.value})}
+                                    className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500 text-white"
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="24h Volume (e.g., 45.6M)"
+                                    value={newCoin.volume24h}
+                                    onChange={(e) => setNewCoin({...newCoin, volume24h: e.target.value})}
+                                    className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500 text-white"
+                                />
+                            </div>
+
+                            <button
+                                onClick={handleAddCoin}
+                                className="w-full mt-6 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 py-3 rounded-lg font-bold transition-all"
+                            >
+                                Add Coin
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Bet Modal */}
+                {showBetModal && (
+                    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+                        <div className="bg-gray-900 rounded-2xl p-6 max-w-md w-full border border-purple-500/30">
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-2xl font-bold">Place Your Bet</h3>
+                                <button onClick={() => setShowBetModal(false)} className="hover:bg-white/10 p-2 rounded-lg">
+                                    <X />
+                                </button>
+                            </div>
+
+                            <div className="mb-6">
+                                <div className="font-bold mb-4">{activeBet.question}</div>
+                                
+                                <div className="flex gap-3 mb-4">
+                                    <button
+                                        onClick={() => setBetSide('YES')}
+                                        className={`flex-1 py-3 rounded-lg font-bold transition-all ${
+                                            betSide === 'YES'
+                                                ? 'bg-green-600 text-white'
+                                                : 'bg-white/10 hover:bg-white/20'
+                                        }`}
+                                    >
+                                        YES {(activeBet.yesPrice * 100).toFixed(0)}¢
+                                    </button>
+                                    <button
+                                        onClick={() => setBetSide('NO')}
+                                        className={`flex-1 py-3 rounded-lg font-bold transition-all ${
+                                            betSide === 'NO'
+                                                ? 'bg-red-600 text-white'
+                                                : 'bg-white/10 hover:bg-white/20'
+                                        }`}
+                                    >
+                                        NO {(activeBet.noPrice * 100).toFixed(0)}¢
+                                    </button>
+                                </div>
+
+                                <input
+                                    type="number"
+                                    placeholder="Amount (USDC)"
+                                    value={betAmount}
+                                    onChange={(e) => setBetAmount(e.target.value)}
+                                    className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500 mb-4 text-white"
+                                />
+
+                                {betAmount && parseFloat(betAmount) > 0 && (
+                                    <div className="bg-white/5 rounded-lg p-4 mb-4">
+                                        <div className="text-sm text-gray-400 mb-1">If {betSide} wins, you get</div>
+                                        <div className="text-2xl font-bold text-green-400">${calculatePotentialReturn()}</div>
+                                        <div className="text-xs text-gray-500 mt-1">
+                                            {(calculatePotentialReturn() / parseFloat(betAmount)).toFixed(2)}x return
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <button
+                                onClick={placeBet}
+                                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 py-3 rounded-lg font-bold transition-all"
+                            >
+                                {walletConnected ? 'Confirm Bet' : 'Connect Wallet'}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Share Modal */}
+                {showShareModal && (
+                    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+                        <div className="bg-gray-900 rounded-2xl p-6 max-w-md w-full border border-purple-500/30">
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-2xl font-bold">Share</h3>
+                                <button onClick={() => setShowShareModal(false)} className="hover:bg-white/10 p-2 rounded-lg">
+                                    <X />
+                                </button>
+                            </div>
+
+                            <div className="bg-gradient-to-br from-purple-600/20 to-pink-600/20 rounded-xl p-6 mb-4 border border-purple-500/30">
+                                <div className="text-3xl font-bold mb-2">{selectedCoin.symbol}</div>
+                                <div className="text-2xl font-bold mb-2">${selectedCoin.price.toFixed(8)}</div>
+                                <div className={`flex items-center gap-2 ${
+                                    selectedCoin.change24h >= 0 ? 'text-green-400' : 'text-red-400'
+                                }`}>
+                                    {selectedCoin.change24h >= 0 ? <TrendingUp /> : <TrendingDown />}
+                                    {selectedCoin.change24h >= 0 ? '+' : ''}{selectedCoin.change24h.toFixed(2)}% today
+                                </div>
+                                <div className="text-xs text-gray-400 mt-4">memetracker.app</div>
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => alert('Image copied to clipboard!')}
+                                    className="flex-1 bg-white/10 hover:bg-white/20 py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2"
+                                >
+                                    <Copy /> Copy
+                                </button>
+                                <button
+                                    onClick={() => alert('Shared to X!')}
+                                    className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2"
+                                >
+                                    <Share2 /> Share
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    ReactDOM.render(<MemecoinTracker />, document.getElementById('root'));
+</script>
+```
+
+</body>
+</html>
